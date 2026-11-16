@@ -1,0 +1,24 @@
+{
+  "_comment": "Copy this file to settings.json and change only what you need. Any key you leave out uses the default.",
+  "spreadsheet_id": "PASTE-THE-ID-FROM-THE-SHEET-WEB-ADDRESS",
+  "worksheet_name": "Bill Entry",
+  "header_rows": 1,
+  "_machine_name": "Shown in the machine column so you can see who entered each bill. Set a different one on each computer. Blank = the Windows computer name.",
+  "machine_name": "Counter 1",
+  "_columns": "Sheet column for each value. Use \"\" to not write that value. Header row 1 is never written.",
+  "columns": {
+    "invoice": "A",
+    "code": "B",
+    "net": "C",
+    "name": "",
+    "timestamp": "G",
+    "machine": "Q"
+  },
+  "invoice_prefix": "L",
+  "invoice_digits": 5,
+  "require_decimals": true,
+  "confidence_threshold": 80,
+  "amount_confidence_threshold": 88,
+  "_timestamp_format": "\"auto\" copies the style already in the BILL ENTRY timestamp column (time only in the current sheet). Or \"time\" / \"datetime\".",
+  "timestamp_format": "auto"
+}

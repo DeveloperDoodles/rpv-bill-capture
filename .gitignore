@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Credentials and per-machine files — NEVER commit
+credentials/
+*.json
+!settings.example.json
+settings.json
+rpv_regions.json
+party_codes.csv
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local records (contain customer bill data)
+logs/
+tests/data/
+legacy/
+test_images/
+screenshots/
+offline_packages/
