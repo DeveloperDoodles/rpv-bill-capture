@@ -71,7 +71,7 @@ class SheetClient:
 
     # ── Connection ───────────────────────────────────────────────────────
 
-    def _credentials(self):
+    def _credentials(self, interactive: bool = True):
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials
         from google_auth_oauthlib.flow import InstalledAppFlow
@@ -91,6 +91,8 @@ class SheetClient:
             except Exception:
                 creds = None
         if not creds or not creds.valid:
+            if not interactive:
+                raise SheetError("Google login needed — run option 5 (Test Google Sheets connection).")
             if not os.path.exists(self.s.oauth_client_file):
                 raise SheetError(
                     f"Google login file not found:\n{self.s.oauth_client_file}\n"
@@ -104,14 +106,16 @@ class SheetClient:
             f.write(creds.to_json())
         return creds
 
-    def connect(self) -> None:
+    def connect(self, interactive: bool = True) -> None:
+        """Log in and open the sheet. interactive=False never opens a browser (background reconnects)."""
         import gspread
         if not self.s.spreadsheet_id:
             raise SheetError("No spreadsheet_id set in settings.json.")
         try:
             # BackOffHTTPClient waits and retries when Google's per-minute limit is hit.
-            client = gspread.authorize(self._credentials(),
+            client = gspread.authorize(self._credentials(interactive),
                                        http_client=gspread.http_client.BackOffHTTPClient)
+            client.set_timeout(20)  # never freeze the window for long on a bad connection
             book = client.open_by_key(self.s.spreadsheet_id)
             self.ws = book.worksheet(self.s.worksheet_name)
             self.title = book.title

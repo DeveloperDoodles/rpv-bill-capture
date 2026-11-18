@@ -20,5 +20,11 @@
   "confidence_threshold": 80,
   "amount_confidence_threshold": 88,
   "_timestamp_format": "\"auto\" copies the style already in the BILL ENTRY timestamp column (time only in the current sheet). Or \"time\" / \"datetime\".",
-  "timestamp_format": "auto"
+  "timestamp_format": "auto",
+  "_convenience": "Optional. capture_hotkey: key that captures from anywhere (\"\" = off). auto_upload_minutes: 0 = only by hand. keep_logs_days: 0 = keep forever.",
+  "capture_hotkey": "F9",
+  "sounds": true,
+  "auto_upload_minutes": 2,
+  "keep_logs_days": 90,
+  "check_for_updates": true
 }

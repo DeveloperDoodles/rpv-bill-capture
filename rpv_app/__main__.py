@@ -8,6 +8,7 @@ RPV Bill OCR — command line entry point.
     python -m rpv_app --test-sheets    check the Google Sheets connection
     python -m rpv_app --upload         upload bills waiting in the offline queue
     python -m rpv_app --setup          ask for the Google Sheet link and this computer's name
+    python -m rpv_app --doctor         check everything (Python, Tesseract, settings, Google, calibration)
     python -m rpv_app --accuracy DIR   measure OCR accuracy on saved crops (see accuracy.py)
 Developer tools (not in run.bat — clerks capture from the screen):
     python -m rpv_app --pdf-check FILE print the exact bill values in an RPV PDF (for test data)
@@ -23,8 +24,18 @@ import time
 from . import __version__
 
 
-def _fail(msg: str) -> int:
+def _fail(msg: str, popup: bool = False) -> int:
     print(f"\nERROR: {msg}\n")
+    if popup:  # the capture window may be started without a visible console
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror("RPV Bill Capture", msg.replace("       ", ""))
+            root.destroy()
+        except Exception:
+            pass
     return 1
 
 
@@ -39,17 +50,24 @@ def main(argv=None) -> int:
     p.add_argument("--pdf", nargs="*", metavar="FILE", help="import bills from RPV PDF printouts")
     p.add_argument("--pdf-check", nargs="+", metavar="FILE", help="show what a PDF contains, write nothing")
     p.add_argument("--setup", action="store_true", help="ask for the sheet link and this computer's name")
+    p.add_argument("--doctor", action="store_true", help="check everything and print what's wrong")
     p.add_argument("--version", action="version", version=f"RPV Bill OCR {__version__}")
     args = p.parse_args(argv)
 
     if args.setup:
         return first_setup()
+    if args.doctor:
+        from .doctor import run as run_doctor
+        return run_doctor()
+
+    capture_mode = not any((args.calibrate, args.test, args.test_sheets, args.upload,
+                            args.accuracy, args.pdf is not None, args.pdf_check))
 
     from .config import load_calibration, load_party_codes, load_settings
     try:
         settings = load_settings()
     except Exception as e:
-        return _fail(f"settings.json has a problem: {e}")
+        return _fail(f"settings.json has a problem: {e}", popup=capture_mode)
 
     from . import ocr
     if args.accuracy:
@@ -87,7 +105,7 @@ def main(argv=None) -> int:
     try:
         ocr.setup_tesseract(settings)
     except ocr.TesseractMissing as e:
-        return _fail(str(e))
+        return _fail(str(e), popup=capture_mode)
 
     if args.calibrate:
         from . import calibrate
@@ -96,7 +114,7 @@ def main(argv=None) -> int:
     calibration = load_calibration()
     if not calibration or "regions" not in calibration:
         return _fail("The screen has not been calibrated yet (or was calibrated with the old version).\n"
-                     "       Run Calibrate first (run.bat option 2).")
+                     "       Run Calibrate first (run.bat option 2).", popup=capture_mode)
 
     party_codes = load_party_codes(settings)
     if not party_codes:
@@ -105,13 +123,24 @@ def main(argv=None) -> int:
     if args.test:
         return _test_screen(settings, calibration, party_codes)
 
+    from . import qol
     from .session import Session
     from .ui import CaptureWindow
+    lock = qol.SingleInstance()
+    if not lock.ok:
+        return _fail("RPV Bill Capture is already open on this computer.\n"
+                     "       Look for its window (it may be behind RPV).", popup=True)
+    removed = qol.cleanup_logs(settings.keep_logs_days)
+    if removed:
+        print(f"Removed {removed} log file(s) older than {settings.keep_logs_days} days.")
     sheet, err = (None, "") if args.dry_run else _connect(settings)
     if err:
         print(f"WARNING: {err}\nContinuing offline — bills will be kept locally and uploaded later.")
     session = Session(settings, calibration, sheet=sheet, dry_run=args.dry_run, party_codes=party_codes)
-    CaptureWindow(session, sheet_error=err).run()
+    try:
+        CaptureWindow(session, sheet_error=err).run()
+    finally:
+        lock.release()
     return 0
 
 

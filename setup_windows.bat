@@ -81,9 +81,18 @@ if not exist party_codes.csv (
     echo [INFO] No party_codes.csv - party codes will only be checked for format.
 )
 
+REM 8. Desktop shortcut that opens the capture window directly
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=[Environment]::GetFolderPath('Desktop'); $s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d 'RPV Bill Capture.lnk')); $s.TargetPath='%CD%\start_capture.bat'; $s.WorkingDirectory='%CD%'; $s.IconLocation='%SystemRoot%\System32\shell32.dll,22'; $s.Save()" >nul 2>&1
+if !errorlevel! equ 0 (
+    echo [OK] Desktop shortcut "RPV Bill Capture" created - double-click it to start capturing.
+) else (
+    echo [INFO] Could not create the desktop shortcut. Use start_capture.bat instead.
+)
+
 echo.
 echo =========================================
 echo   SETUP COMPLETE - now double-click run.bat
 echo   and choose 2 (Calibrate) the first time.
+echo   Problems? run.bat option 7 checks everything.
 echo =========================================
 pause

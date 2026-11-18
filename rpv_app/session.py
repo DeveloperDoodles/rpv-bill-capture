@@ -62,6 +62,22 @@ class Session:
         self.stats.captured += 1
         return bill
 
+    # ── Connection ───────────────────────────────────────────────────────
+
+    def try_reconnect(self) -> bool:
+        """Reconnect to Google Sheets without ever opening a browser. True if now online."""
+        if self.dry_run:
+            return False
+        if self.sheet and self.sheet.connected:
+            return True
+        try:
+            if self.sheet is None:
+                self.sheet = SheetClient(self.settings)
+            self.sheet.connect(interactive=False)
+            return self.sheet.connected
+        except Exception:
+            return False
+
     # ── Duplicates ───────────────────────────────────────────────────────
 
     def find_duplicates(self, invoice: str, snapshot=None) -> list[str]:

@@ -36,6 +36,7 @@ class Bill:
     images: dict = field(default_factory=dict)       # crop name → PIL image (not logged)
     user_modified: bool = False
     agreed: set = field(default_factory=set)         # fields confirmed by a second, independent reading
+    problem_fields: set = field(default_factory=set) # fields the clerk should look at
 
     @property
     def needs_review(self) -> bool:
@@ -149,6 +150,8 @@ def apply_parse(bill: Bill, raw: dict, settings: Settings, party_codes: Optional
     for key, r in results.items():
         setattr(bill, key, r.value)
         bill.issues.extend(r.issues)
+        if r.issues:
+            bill.problem_fields.add(key)
         bill.notes.extend(r.notes)
     if party_codes and bill.code in party_codes and party_codes[bill.code]:
         bill.name = party_codes[bill.code]
@@ -164,6 +167,7 @@ def check_confidence(bill: Bill, settings: Settings) -> None:
             bill.notes.append(f"{labels[key]}: low OCR confidence ({conf:.0f}%), confirmed by a second reading")
         else:
             bill.issues.append(f"{labels[key]} was hard to read ({conf:.0f}% confidence)")
+            bill.problem_fields.add(key)
 
 
 def revalidate(values: dict, settings: Settings, party_codes: Optional[dict]) -> tuple[dict, list]:

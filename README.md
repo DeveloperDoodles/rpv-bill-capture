@@ -145,6 +145,8 @@ Double-click **`setup_windows.bat`**. It will:
    - **Name for this computer:** e.g. `Counter 1`. This name is written in column **Q** for every bill
      entered on this PC, so you can see who entered what.
 
+6. Put a **"RPV Bill Capture"** shortcut on the Desktop. It opens the capture window directly.
+
 Read the messages at the end. `[OK]` is good. `[WARNING]` lines tell you what is still missing.
 
 To change the answers later, run this inside the app folder (or edit `settings.json` in Notepad):
@@ -165,7 +167,8 @@ Open **RPV Viewer** on a bill, then double-click **`run.bat`**. You get this men
 4. Practice capture (nothing is written to the sheet)
 5. Test Google Sheets connection
 6. Upload bills that are waiting (saved while offline)
-7. Exit
+7. Check everything (health check)
+8. Exit
 ```
 
 Do these in order the first time:
@@ -200,26 +203,43 @@ The login is remembered for this Windows user, so the browser won't open again.
 Same as the real thing, but **nothing is written** to the sheet. Try a few bills.
 
 ### 4.5 Option 1: Start capturing
-You're live.
+You're live. From now on you can also just double-click the **RPV Bill Capture** desktop shortcut.
+
+### If something isn't working: option 7
+The **health check** tests everything in one go: Python, packages, Tesseract, `settings.json`, the Google
+files and login, the sheet connection, calibration and waiting uploads. It prints `[OK]`, `[WARN]` or
+`[FAIL]` with what to do. Send a photo of it when asking for help.
 
 ---
 
 ## 5. Daily use
 
-1. Double-click `run.bat` → **1**. A small window stays on top of RPV.
+1. Double-click the **RPV Bill Capture** desktop shortcut (or `run.bat` → **1**). A small window stays on top
+   of RPV. It reopens where you last left it.
 2. In RPV, open a bill (use **Next** for the next one).
-3. Click **CAPTURE BILL**.
+3. Press **F9**, or click **CAPTURE BILL**. F9 works even while RPV is the active window.
+   You'll hear a short sound: a normal beep when the bill is saved, a different one when it needs checking.
    - **Green message:** saved, with the sheet row number.
    - **Check window:** the app wasn't sure. It shows the screen crop next to the values. Fix anything wrong,
      then press **Enter** to save or **Esc** to skip.
    - **"Duplicate invoice":** this bill is already in the sheet. This usually means **Next** wasn't clicked.
      Choose **No** to skip it.
    - **For a two-page bill:** go to its **last page** (where the Bill Amount is) before capturing.
-4. Other buttons:
+   - The check window marks the doubtful field(s) in red and puts the cursor in the first one.
+4. The **Recent** list shows the last 8 captures: the sheet row each bill went to, or skipped / duplicate / waiting.
+5. Buttons:
    - **Undo last:** removes the last bill this PC wrote, but only if that row still holds that bill.
    - **Upload waiting:** sends bills that were saved while the internet or Google was down.
-5. When you close the window, it warns you if any bills are still waiting to upload. They are kept safely
-   on the PC and offered again next time.
+     This also happens **automatically every 2 minutes**, and the app reconnects to Google by itself
+     when the internet comes back.
+   - **Open sheet:** opens the Google Sheet in the browser.
+   - **Open logs:** opens the folder with the capture logs and crop images.
+6. When you close the window, it warns you if any bills are still waiting to upload. They are kept safely
+   on the PC and uploaded next time.
+7. When a newer version is on GitHub, an orange note at the bottom says so. Close the window and run `update.bat`.
+
+Only one capture window can be open per PC, which prevents double entries from two windows.
+Logs and crop images older than 90 days are deleted automatically; bills waiting to upload are never deleted.
 
 ---
 
@@ -240,7 +260,7 @@ It **keeps** everything that belongs to this PC: `settings.json`, the calibratio
 | `%APPDATA%\RPVBillOCR\token.json` | This Windows user's Google login, created at the first login. Outside the app folder, so copying the folder never copies the login. | **Yes** | Never |
 | `settings.json` | The Sheet ID and this PC's name (step 3.5) | Yes | Never |
 | `rpv_regions.json` | This PC's calibration (step 4.1) | No | Never |
-| `logs\` | Every capture: values, OCR text, crop images; plus the offline upload queue | **Yes** (bill data) | Never |
+| `logs\` | Every capture: values, OCR text, crop images; the offline upload queue; the window position | **Yes** (bill data) | Never |
 | `venv\` | Python packages for this PC, created by setup | No | Never |
 | `party_codes.csv` | Optional list of valid party codes (`code,name`) | Yes | Never |
 | Everything else | The program | No | Yes |
@@ -300,6 +320,11 @@ change it**. Anything left out uses the default. Example:
 | `require_decimals` | `true` | An amount read without `.00` goes to the clerk |
 | `tesseract_path` | auto | Full path to `tesseract.exe` if it isn't found automatically |
 | `oauth_client_file` | `credentials\client_secret.json` | Where the Google login file is |
+| `capture_hotkey` | `F9` | Key that captures from anywhere, e.g. `F8` or `Ctrl+F9`. `""` turns it off. |
+| `sounds` | `true` | Beep on saved / please check / problem |
+| `auto_upload_minutes` | `2` | How often to reconnect and upload waiting bills. `0` = only by hand. |
+| `keep_logs_days` | `90` | Delete logs and crop images older than this. `0` = keep forever. |
+| `check_for_updates` | `true` | Show a note when a newer version is on GitHub (only reads the version number; sends nothing) |
 
 A full example with comments is in [`settings.example.json`](settings.example.json).
 If `settings.json` has a typo in a key name, the app stops and names the key.
@@ -326,6 +351,9 @@ If `settings.json` has a typo in a key name, the app stops and names the key.
 | `No amount found — … go to its LAST page` | It's a multi-page bill. Capture its last page. |
 | Status says **OFFLINE** or "Waiting to upload" | No internet or Google problem. Bills are kept; click **Upload waiting** or run option 6 later. |
 | `settings.json has a problem: Unknown setting(s)` | A key in `settings.json` is misspelled. Compare with section 9. |
+| `RPV Bill Capture is already open on this computer` | Look for the existing window, maybe behind RPV or minimized on the taskbar. |
+| `(Hotkey off: F9 is already used by another program)` | Pick another key with `capture_hotkey` (e.g. `F8`), or click the button. |
+| Not sure what's wrong | Run `run.bat` → **7 Check everything**. |
 
 Every capture is logged in `logs\audit-<date>.jsonl`, with the screen crops in `logs\crops\`. Send these
 when reporting a misread bill.
@@ -357,6 +385,8 @@ python -m rpv_app --pdf-check file.pdf
 | File (`rpv_app/`) | Job |
 |---|---|
 | `__main__.py` | Command line, menu options, first-run `--setup` |
+| `doctor.py` | Health check (`--doctor`, run.bat option 7) |
+| `qol.py` | Hotkey, sounds, window position, single copy, log cleanup, update check |
 | `config.py` | Settings, calibration file, party codes |
 | `capture.py` | Screenshot, crop, screen-size check, Windows DPI fix |
 | `ocr.py` | Image clean-up (auto-scaled), Tesseract |

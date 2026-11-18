@@ -21,6 +21,9 @@ CALIBRATION_FILE = os.path.join(PROJECT_ROOT, "rpv_regions.json")
 CREDENTIALS_DIR = os.path.join(PROJECT_ROOT, "credentials")
 LOGS_DIR = os.path.join(PROJECT_ROOT, "logs")
 PENDING_FILE = os.path.join(LOGS_DIR, "pending_writes.jsonl")
+UI_STATE_FILE = os.path.join(LOGS_DIR, "ui_state.json")
+# Where update.bat and the "new version available" check look.
+UPDATE_REPO = "DeveloperDoodles/rpv-bill-capture"
 
 
 @dataclass
@@ -65,6 +68,13 @@ class Settings:
     sharpen: bool = True
     binarize: bool = True
     tesseract_path: str = ""  # leave blank to auto-detect
+
+    # ── Convenience ──────────────────────────────────────────────────────
+    capture_hotkey: str = "F9"        # press anywhere (even inside RPV) to capture; "" = off
+    sounds: bool = True               # short beep: saved / please check / problem
+    auto_upload_minutes: float = 2    # retry the sheet connection and waiting bills this often; 0 = off
+    keep_logs_days: int = 90          # delete audit logs and crop images older than this; 0 = keep all
+    check_for_updates: bool = True    # show a note when a newer version is on GitHub
 
     @property
     def project_root(self) -> str:
